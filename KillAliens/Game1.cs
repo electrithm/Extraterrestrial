@@ -29,6 +29,7 @@ namespace KillAliens
         public int playerY;
         public int playerSpeed = 5;
         public int score = 0;
+        public int bulletSpeed = 30;
 
         //stores decimals
         public float playerRot = 0F;
@@ -105,12 +106,10 @@ namespace KillAliens
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
-
             //runs all the different controllers
             KeyboardController();
             AlienController();
+            BulletController();
 
             base.Update(gameTime);
         }
@@ -158,6 +157,12 @@ namespace KillAliens
                 spriteBatch.Draw(alien, new Vector2(aliens[i][0], aliens[i][1]), Color.Firebrick);
             }
 
+            //draws bullets
+            for (int i = 0; i < bullets.Count; i++)
+            {
+                spriteBatch.Draw(bullet, new Vector2(bullets[i][0], bullets[i][1]), Color.White);
+            }
+
             //writes text to the screen
             spriteBatch.DrawString(font, score.ToString(), new Vector2(0, 0), Color.LightBlue);
 
@@ -172,6 +177,12 @@ namespace KillAliens
         {
             //gets current keys being pressed
             KeyboardState state = Keyboard.GetState();
+
+            //if the escape button is pressed on a controller or keyboard the game exits
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            {
+                Exit();
+            }
 
             //if the left key is held the player moves left and faces left
             if (state.IsKeyDown(Keys.Left) || state.IsKeyDown(Keys.A))
@@ -196,6 +207,27 @@ namespace KillAliens
             {
                 playerY = playerY + 5;
                 playerRot = MathHelper.ToRadians(180);
+            }
+
+            //if the space key is held and the rotation is up the player shoots up
+            if (state.IsKeyDown(Keys.Space) && playerRot==MathHelper.ToRadians(0))
+            {
+                AddPlayerBullet(0);
+            }
+            //if the space key is held and the rotation is up the player shoots left
+            if (state.IsKeyDown(Keys.Space) && playerRot == MathHelper.ToRadians(270))
+            {
+                AddPlayerBullet(270);
+            }
+            //if the space key is held and the rotation is up the player shoots down
+            if (state.IsKeyDown(Keys.Space) && playerRot == MathHelper.ToRadians(180))
+            {
+                AddPlayerBullet(180);
+            }
+            //if the space key is held and the rotation is up the player shoots right
+            if (state.IsKeyDown(Keys.Space) && playerRot == MathHelper.ToRadians(90))
+            {
+                AddPlayerBullet(90);
             }
         }
 
@@ -224,6 +256,47 @@ namespace KillAliens
                 if (aliens[i][1] < playerX)
                 {
                     aliens[i][1] = aliens[i][1] - aliens[i][2];
+                }
+            }
+        }
+
+        //add new bullets and have them moving towards the facing
+        public void AddPlayerBullet(int facing)
+        {
+            int[] bulletSpawn;
+            bulletSpawn = new int[3];
+            bulletSpawn[0] = playerX + player.Width/2;
+            bulletSpawn[1] = playerY + player.Height/2;
+            bulletSpawn[2] = facing;
+            bullets.Add(bulletSpawn);
+            bulletBounds.Add(new Rectangle(bulletSpawn[0], bulletSpawn[1], bullet.Height, bullet.Width));
+        }
+
+        //make the bullets move
+        public void BulletController()
+        {
+            //for each bullet
+            for (int i = 0; i<bullets.Count; i++)
+            {
+                //if its facing up move up
+                if (bullets[i][2] == 0)
+                {
+                    bullets[i][1] = bullets[i][1] - bulletSpeed;
+                }
+                //if its facing down move down
+                if (bullets[i][2] == 180)
+                {
+                    bullets[i][1] = bullets[i][1] + bulletSpeed;
+                }
+                //if its moving right move right
+                if (bullets[i][2] == 90)
+                {
+                    bullets[i][0] = bullets[i][0] + bulletSpeed;
+                }
+                //if its facing left move left
+                if (bullets[i][2] == 270)
+                {
+                    bullets[i][0] = bullets[i][0] - bulletSpeed;
                 }
             }
         }
