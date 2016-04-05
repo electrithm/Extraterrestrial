@@ -44,6 +44,10 @@ namespace KillAliens
         //allows random number generation
         public Random rnd = new Random();
 
+        //creates rectangle the size of the window to see if objects are outside of it
+        Rectangle windowBox;
+        Rectangle playerBounds;
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -137,6 +141,7 @@ namespace KillAliens
                 }
                 playerX = Window.ClientBounds.Width / 2;
                 playerY = Window.ClientBounds.Height / 2;
+                windowBox = new Rectangle(0,0,Window.ClientBounds.Width,Window.ClientBounds.Height);
             }
 
             //starts drawing
@@ -155,6 +160,7 @@ namespace KillAliens
             for (int i = 0; i < aliens.Count; i++)
             {
                 spriteBatch.Draw(alien, new Vector2(aliens[i][0], aliens[i][1]), Color.Firebrick);
+                spriteBatch.Draw(alien, new Vector2(aliens[i][0], aliens[i][1]), null, Color.Firebrick, MathHelper.ToRadians(0), new Vector2(alien.Width / 2, alien.Height / 2), 1, SpriteEffects.None, 1);
             }
 
             //draws bullets
@@ -189,43 +195,47 @@ namespace KillAliens
             {
                 playerX = playerX - 5;
                 playerRot = MathHelper.ToRadians(270);
+                playerBounds = new Rectangle(playerX - player.Width / 2, playerY - player.Width / 2, player.Width, player.Height);
             }
             //if the right key is held the player moves right and faces right
             if (state.IsKeyDown(Keys.Right) || state.IsKeyDown(Keys.D))
             {
                 playerX = playerX + 5;
                 playerRot = MathHelper.ToRadians(90);
+                playerBounds = new Rectangle(playerX - player.Width / 2, playerY - player.Width / 2, player.Width, player.Height);
             }
             //if the up key is held the player moves up and faces up
             if (state.IsKeyDown(Keys.Up) || state.IsKeyDown(Keys.W))
             {
                 playerY = playerY - 5;
                 playerRot = MathHelper.ToRadians(0);
+                playerBounds = new Rectangle(playerX - player.Width / 2, playerY - player.Width / 2, player.Width, player.Height);
             }
             //if the down key is held the player moves down and faces down
             if (state.IsKeyDown(Keys.Down) || state.IsKeyDown(Keys.S))
             {
                 playerY = playerY + 5;
                 playerRot = MathHelper.ToRadians(180);
+                playerBounds = new Rectangle(playerX - player.Width / 2, playerY - player.Width / 2, player.Width, player.Height);
             }
 
             //if the space key is held and the rotation is up the player shoots up
-            if (state.IsKeyDown(Keys.Space) && playerRot==MathHelper.ToRadians(0))
+            if (state.IsKeyDown(Keys.Space) && playerRot==MathHelper.ToRadians(0) && bullets.Count<3)
             {
                 AddPlayerBullet(0);
             }
             //if the space key is held and the rotation is up the player shoots left
-            if (state.IsKeyDown(Keys.Space) && playerRot == MathHelper.ToRadians(270))
+            if (state.IsKeyDown(Keys.Space) && playerRot == MathHelper.ToRadians(270) && bullets.Count < 3)
             {
                 AddPlayerBullet(270);
             }
             //if the space key is held and the rotation is up the player shoots down
-            if (state.IsKeyDown(Keys.Space) && playerRot == MathHelper.ToRadians(180))
+            if (state.IsKeyDown(Keys.Space) && playerRot == MathHelper.ToRadians(180) && bullets.Count < 3)
             {
                 AddPlayerBullet(180);
             }
             //if the space key is held and the rotation is up the player shoots right
-            if (state.IsKeyDown(Keys.Space) && playerRot == MathHelper.ToRadians(90))
+            if (state.IsKeyDown(Keys.Space) && playerRot == MathHelper.ToRadians(90) && bullets.Count < 3)
             {
                 AddPlayerBullet(90);
             }
@@ -241,21 +251,25 @@ namespace KillAliens
                 if (aliens[i][0] < playerX)
                 {
                     aliens[i][0] = aliens[i][0] + aliens[i][2];
+                    alienBounds[i] = new Rectangle(aliens[i][0] - alien.Width / 2, aliens[i][1] - alien.Width / 2, alien.Width, alien.Height);
                 }
                 //if the alien is on the right side of the player it moves left
                 if (aliens[i][0] > playerX)
                 {
                     aliens[i][0] = aliens[i][0] - aliens[i][2];
+                    alienBounds[i] = new Rectangle(aliens[i][0] - alien.Width / 2, aliens[i][1] - alien.Width / 2, alien.Width, alien.Height);
                 }
                 //if the alien is on the top side of the player it moves down
                 if (aliens[i][1] < playerY)
                 {
                     aliens[i][1] = aliens[i][1] + aliens[i][2];
+                    alienBounds[i] = new Rectangle(aliens[i][0] - alien.Width / 2, aliens[i][1] - alien.Width / 2, alien.Width, alien.Height);
                 }
                 //if the alien is on the bottom side of the player it moves up
                 if (aliens[i][1] < playerX)
                 {
                     aliens[i][1] = aliens[i][1] - aliens[i][2];
+                    alienBounds[i] = new Rectangle(aliens[i][0] - alien.Width / 2, aliens[i][1] - alien.Width / 2, alien.Width, alien.Height);
                 }
             }
         }
@@ -265,8 +279,8 @@ namespace KillAliens
         {
             int[] bulletSpawn;
             bulletSpawn = new int[3];
-            bulletSpawn[0] = playerX + player.Width/2;
-            bulletSpawn[1] = playerY + player.Height/2;
+            bulletSpawn[0] = playerX - player.Width/2;
+            bulletSpawn[1] = playerY - player.Height/2;
             bulletSpawn[2] = facing;
             bullets.Add(bulletSpawn);
             bulletBounds.Add(new Rectangle(bulletSpawn[0], bulletSpawn[1], bullet.Height, bullet.Width));
@@ -276,8 +290,39 @@ namespace KillAliens
         public void BulletController()
         {
             //for each bullet
-            for (int i = 0; i<bullets.Count; i++)
+            for (int i = 0; i<bullets.Count-1; i++)
             {
+
+                //for each alien check if it was shot
+                for (int x = 0; x < aliens.Count - 1; x++)
+                {
+                    if (bulletBounds[i].Intersects(alienBounds[x]))
+                    {
+                        //debug
+                        Console.WriteLine("Bullet " + bullets[i] + " shot alien " + aliens[x]);
+                        bullets.RemoveAt(i);
+                        bulletBounds.RemoveAt(i);
+                        aliens.RemoveAt(x);
+                        alienBounds.RemoveAt(x);
+                    }
+                }
+
+                if (bullets.Count == 0)
+                {
+                    break;
+                }
+
+                //if the bullet is out of bounds remove it
+                if (CheckOutOfBounds(bullets[i][0], bullets[i][1]) == true)
+                {
+                    //debug
+                    Console.WriteLine("Bullet " + bullets[i] + " out of bounds");
+                    bullets.RemoveAt(i);
+                    bulletBounds.RemoveAt(i);
+                }
+                //debug
+                Console.WriteLine(bullets.Count + "-" + bullets[i][0] + "-" + bullets[i][1]);
+
                 //if its facing up move up
                 if (bullets[i][2] == 0)
                 {
@@ -298,6 +343,18 @@ namespace KillAliens
                 {
                     bullets[i][0] = bullets[i][0] - bulletSpeed;
                 }
+            }
+        }
+        
+        public bool CheckOutOfBounds(int x, int y)
+        {
+            if (x < 0 || x > Window.ClientBounds.Width || y < 0 || y > Window.ClientBounds.Width)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
     }
