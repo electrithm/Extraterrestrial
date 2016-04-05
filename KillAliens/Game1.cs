@@ -64,17 +64,6 @@ namespace KillAliens
         /// </summary>
         protected override void Initialize()
         {
-            //spawns aliens at the start
-            for (int i = 0; i < 5; i++)
-            {
-                int[] alienSpawn;
-                alienSpawn = new int[3];
-                alienSpawn[0] = rnd.Next(0, Window.ClientBounds.Width-128);
-                alienSpawn[1] = rnd.Next(0, Window.ClientBounds.Height-128);
-                alienSpawn[2] = rnd.Next(1, playerSpeed + 3);
-                aliens.Add(alienSpawn);
-                alienBounds.Add(new Rectangle(alienSpawn[0], alienSpawn[1], 128, 128));
-            }
             base.Initialize();
         }
 
@@ -114,6 +103,7 @@ namespace KillAliens
             KeyboardController();
             AlienController();
             BulletController();
+            PlayerController();
 
             base.Update(gameTime);
         }
@@ -142,6 +132,8 @@ namespace KillAliens
                 playerX = Window.ClientBounds.Width / 2;
                 playerY = Window.ClientBounds.Height / 2;
                 windowBox = new Rectangle(0,0,Window.ClientBounds.Width,Window.ClientBounds.Height);
+                //spawns aliens at the start
+                AddAlien(5);
             }
 
             //starts drawing
@@ -157,14 +149,14 @@ namespace KillAliens
             spriteBatch.Draw(player, new Vector2(playerX, playerY), null, Color.Beige, playerRot, new Vector2(player.Width / 2, player.Height / 2), 1, SpriteEffects.None, 1);
 
             //draws aliens
-            for (int i = 0; i < aliens.Count; i++)
+            for (int i = 0; i < aliens.Count-1; i++)
             {
                 spriteBatch.Draw(alien, new Vector2(aliens[i][0], aliens[i][1]), Color.Firebrick);
                 spriteBatch.Draw(alien, new Vector2(aliens[i][0], aliens[i][1]), null, Color.Firebrick, MathHelper.ToRadians(0), new Vector2(alien.Width / 2, alien.Height / 2), 1, SpriteEffects.None, 1);
             }
 
             //draws bullets
-            for (int i = 0; i < bullets.Count; i++)
+            for (int i = 0; i < bullets.Count -1; i++)
             {
                 spriteBatch.Draw(bullet, new Vector2(bullets[i][0], bullets[i][1]), Color.White);
             }
@@ -245,83 +237,72 @@ namespace KillAliens
         public void AlienController()
         {
             //for each alien
-            for (int i = 0; i<aliens.Count; i++)
+            for (int i = 0; i<aliens.Count - 1; i++)
             {
                 //if the alien is on the left side of the player it moves right
                 if (aliens[i][0] < playerX)
                 {
-                    aliens[i][0] = aliens[i][0] + aliens[i][2];
+                    aliens[i][0] = aliens[i][0] + 5;//aliens[i][2];
                     alienBounds[i] = new Rectangle(aliens[i][0] - alien.Width / 2, aliens[i][1] - alien.Width / 2, alien.Width, alien.Height);
                 }
                 //if the alien is on the right side of the player it moves left
                 if (aliens[i][0] > playerX)
                 {
-                    aliens[i][0] = aliens[i][0] - aliens[i][2];
+                    aliens[i][0] = aliens[i][0] - 5;//aliens[i][2];
                     alienBounds[i] = new Rectangle(aliens[i][0] - alien.Width / 2, aliens[i][1] - alien.Width / 2, alien.Width, alien.Height);
                 }
                 //if the alien is on the top side of the player it moves down
                 if (aliens[i][1] < playerY)
                 {
-                    aliens[i][1] = aliens[i][1] + aliens[i][2];
+                    aliens[i][1] = aliens[i][1] + 5;//aliens[i][2];
                     alienBounds[i] = new Rectangle(aliens[i][0] - alien.Width / 2, aliens[i][1] - alien.Width / 2, alien.Width, alien.Height);
                 }
                 //if the alien is on the bottom side of the player it moves up
                 if (aliens[i][1] < playerX)
                 {
-                    aliens[i][1] = aliens[i][1] - aliens[i][2];
+                    aliens[i][1] = aliens[i][1] - 5;//aliens[i][2];
                     alienBounds[i] = new Rectangle(aliens[i][0] - alien.Width / 2, aliens[i][1] - alien.Width / 2, alien.Width, alien.Height);
                 }
+                //Console.WriteLine(aliens.Count+"-"+i);
+                //Console.WriteLine("There are "+aliens.Count+" aliens at " + aliens[i][0] + "-" + aliens[i][1]);
             }
-        }
-
-        //add new bullets and have them moving towards the facing
-        public void AddPlayerBullet(int facing)
-        {
-            int[] bulletSpawn;
-            bulletSpawn = new int[3];
-            bulletSpawn[0] = playerX - player.Width/2;
-            bulletSpawn[1] = playerY - player.Height/2;
-            bulletSpawn[2] = facing;
-            bullets.Add(bulletSpawn);
-            bulletBounds.Add(new Rectangle(bulletSpawn[0], bulletSpawn[1], bullet.Height, bullet.Width));
         }
 
         //make the bullets move
         public void BulletController()
         {
             //for each bullet
-            for (int i = 0; i<bullets.Count-1; i++)
+            for (int i = 0; i < bullets.Count - 1; i++)
             {
-
                 //for each alien check if it was shot
                 for (int x = 0; x < aliens.Count - 1; x++)
                 {
                     if (bulletBounds[i].Intersects(alienBounds[x]))
                     {
                         //debug
-                        Console.WriteLine("Bullet " + bullets[i] + " shot alien " + aliens[x]);
+                        //Console.WriteLine("Bullet " + i + " shot alien " + aliens[x].ToString());
                         bullets.RemoveAt(i);
                         bulletBounds.RemoveAt(i);
                         aliens.RemoveAt(x);
                         alienBounds.RemoveAt(x);
+                        AddAlien(2);
                     }
                 }
 
                 if (bullets.Count == 0)
                 {
+                    Console.WriteLine("Bullets are too low!");
                     break;
                 }
-
+                
                 //if the bullet is out of bounds remove it
                 if (CheckOutOfBounds(bullets[i][0], bullets[i][1]) == true)
                 {
-                    //debug
-                    Console.WriteLine("Bullet " + bullets[i] + " out of bounds");
                     bullets.RemoveAt(i);
                     bulletBounds.RemoveAt(i);
                 }
                 //debug
-                Console.WriteLine(bullets.Count + "-" + bullets[i][0] + "-" + bullets[i][1]);
+                //Console.WriteLine(bullets.Count + "-" + bullets[i][0] + "-" + bullets[i][1]);
 
                 //if its facing up move up
                 if (bullets[i][2] == 0)
@@ -346,6 +327,33 @@ namespace KillAliens
             }
         }
         
+
+        //controls players
+        public void PlayerController()
+        {
+            //if the player is going off the screen on the left side they will be stopped
+            if (playerX<0 + (player.Width / 2))
+            {
+                playerX = 0 + (player.Width / 2);
+            }
+            //if the player is going off the screen on the top side they will be stopped
+            if (playerY < 0 + (player.Height / 2))
+            {
+                playerY = 0 + (player.Height / 2);
+            }
+            //if the player is going off the screen on the right side they will be stopped
+            if (playerX > Window.ClientBounds.Width - (player.Width / 2))
+            {
+                playerX = Window.ClientBounds.Width - (player.Width / 2);
+            }
+            //if the player is going off the screen on the bottom side they will be stopped
+            if (playerY > Window.ClientBounds.Height - (player.Height / 2))
+            {
+                playerY = Window.ClientBounds.Height - (player.Height/2);
+            }
+        }
+
+        //function for checking if a coordinate is out of bounds
         public bool CheckOutOfBounds(int x, int y)
         {
             if (x < 0 || x > Window.ClientBounds.Width || y < 0 || y > Window.ClientBounds.Width)
@@ -355,6 +363,33 @@ namespace KillAliens
             else
             {
                 return false;
+            }
+        }
+
+        //add new bullets and have them moving towards the facing
+        public void AddPlayerBullet(int facing)
+        {
+            int[] bulletSpawn;
+            bulletSpawn = new int[3];
+            bulletSpawn[0] = playerX - player.Width / 2;
+            bulletSpawn[1] = playerY - player.Height / 2;
+            bulletSpawn[2] = facing;
+            bullets.Add(bulletSpawn);
+            bulletBounds.Add(new Rectangle(bulletSpawn[0], bulletSpawn[1], bullet.Height, bullet.Width));
+        }
+
+        //add aliens
+        public void AddAlien(int amount)
+        {
+            for (int i = 0; i < amount; i++)
+            {
+                int[] alienSpawn;
+                alienSpawn = new int[3];
+                alienSpawn[0] = rnd.Next(0, Window.ClientBounds.Width);
+                alienSpawn[1] = rnd.Next(0, Window.ClientBounds.Height);
+                alienSpawn[2] = rnd.Next(1, playerSpeed + 3);
+                aliens.Add(alienSpawn);
+                alienBounds.Add(new Rectangle(alienSpawn[0], alienSpawn[1], alien.Width, alien.Height));
             }
         }
     }
